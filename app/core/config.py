@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     circuit_breaker_failure_threshold: int = 5
     circuit_breaker_recovery_seconds: float = 15.0
 
+    provider_retry_enabled: bool = False
+    provider_max_retries: int = 2
+    provider_retry_base_delay_seconds: float = 0.25
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
