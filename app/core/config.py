@@ -1,0 +1,27 @@
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    app_name: str = "Multi-Provider API Gateway"
+    app_version: str = "0.1.0"
+    environment: str = "development"
+
+    host: str = "0.0.0.0"
+    port: int = 8000
+
+    provider_a_url: str = "http://92.114.51.251:8001/v1/process"
+    provider_b_url: str = "http://92.114.51.251:8002/v1/process"
+    provider_c_url: str = "http://92.114.51.251:8003/v1/process"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
