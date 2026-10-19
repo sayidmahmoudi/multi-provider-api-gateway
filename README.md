@@ -127,8 +127,8 @@ These are short, single-run measurements from 2026-10-19, before Redis-backed
 shared controls and durable stream batching, and should not be treated as
 capacity claims. Provider A's offered load greatly exceeded its then-configured
 5 RPS cap, so most attempts were rejected with 503. B returned one 503 and had
-one timeout; C returned nine 503 responses. Rerun the benchmark on the current
-stack to obtain comparable results for the final implementation.
+one timeout; C returned nine 503 responses. These figures are historical
+context; the measurements above are the results for the current implementation.
 
 ## Persistence, scaling, and trade-offs
 
