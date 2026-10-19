@@ -42,7 +42,7 @@ class ProviderClient:
     ) -> httpx.Response:
         breaker = self._breakers[provider]
 
-        await breaker.before_request()
+        permit = await breaker.before_request()
 
         try:
             response = await self._client.post(
@@ -50,14 +50,12 @@ class ProviderClient:
                 json=payload,
             )
         except httpx.RequestError:
-            await breaker.record_failure()
+            await breaker.record_failure(permit)
             raise
 
         if response.status_code >= 500:
-            await breaker.record_failure()
+            await breaker.record_failure(permit)
         else:
-            # Includes 2xx and 4xx responses such as 429.
-            # HTTP 4xx responses are not provider availability failures.
-            await breaker.record_success()
+            await breaker.record_success(permit)
 
         return response
