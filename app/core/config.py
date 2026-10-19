@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     provider_b_url: str = "http://92.114.51.251:8002/v1/process"
     provider_c_url: str = "http://92.114.51.251:8003/v1/process"
 
+    provider_timeout_seconds: float = 12.0
+    provider_connect_timeout_seconds: float = 2.0
+
+    circuit_breaker_failure_threshold: int = 5
+    circuit_breaker_recovery_seconds: float = 15.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

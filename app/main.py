@@ -15,8 +15,8 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     timeout = httpx.Timeout(
-        12.0,
-        connect=2.0,
+        settings.provider_timeout_seconds,
+        connect=settings.provider_connect_timeout_seconds,
     )
 
     limits = httpx.Limits(
