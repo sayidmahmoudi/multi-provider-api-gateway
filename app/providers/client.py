@@ -1,10 +1,13 @@
+
+import asyncio
 from typing import Any, Literal
 
 import httpx
 
 from app.core.config import Settings
-from app.providers.circuit_breaker import CircuitBreaker
-
+from app.providers.circuit_breaker import (
+    CircuitBreaker,
+)
 
 ProviderName = Literal["a", "b", "c"]
 
@@ -16,6 +19,7 @@ class ProviderClient:
         settings: Settings,
     ) -> None:
         self._client = client
+        self._settings = settings
 
         self._provider_urls: dict[ProviderName, str] = {
             "a": settings.provider_a_url,
@@ -39,23 +43,63 @@ class ProviderClient:
         self,
         provider: ProviderName,
         payload: dict[str, Any],
+        idempotency_key: str | None = None,
     ) -> httpx.Response:
         breaker = self._breakers[provider]
 
-        permit = await breaker.before_request()
+        # Retry is allowed only when explicitly enabled
+        # and an idempotency key is provided.
+        retry_allowed = (
+            self._settings.provider_retry_enabled
+            and bool(idempotency_key)
+        )
 
-        try:
-            response = await self._client.post(
-                self._provider_urls[provider],
-                json=payload,
-            )
-        except httpx.RequestError:
-            await breaker.record_failure(permit)
-            raise
+        max_attempts = (
+            1 + self._settings.provider_max_retries
+            if retry_allowed
+            else 1
+        )
 
-        if response.status_code >= 500:
-            await breaker.record_failure(permit)
-        else:
-            await breaker.record_success(permit)
+        headers: dict[str, str] = {}
+        if idempotency_key:
+            headers["Idempotency-Key"] = idempotency_key
 
-        return response
+        for attempt in range(max_attempts):
+            permit = await breaker.before_request()
+
+            try:
+                response = await self._client.post(
+                    self._provider_urls[provider],
+                    json=payload,
+                    headers=headers or None,
+                )
+            except httpx.RequestError:
+                await breaker.record_failure(permit)
+
+                if attempt + 1 >= max_attempts:
+                    raise
+
+                await self._wait_before_retry(attempt)
+                continue
+
+            if response.status_code >= 500:
+                await breaker.record_failure(permit)
+
+                if attempt + 1 < max_attempts:
+                    await self._wait_before_retry(attempt)
+                    continue
+            else:
+                # 4xx responses, including 429, are not retried.
+                await breaker.record_success(permit)
+
+            return response
+
+        # The loop returns a response or raises on its final attempt.
+        raise RuntimeError("Retry loop exited unexpectedly")
+
+    async def _wait_before_retry(self, attempt: int) -> None:
+        delay = (
+            self._settings.provider_retry_base_delay_seconds
+            * (2 ** attempt)
+        )
+        await asyncio.sleep(delay)

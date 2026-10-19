@@ -63,9 +63,12 @@ async def process_request(
     )
 
     try:
+        idempotency_key = request.headers.get("Idempotency-Key")
+
         upstream_response = await provider_client.process(
             provider=provider,
             payload=payload,
+            idempotency_key=idempotency_key,
         )
 
     except httpx.TimeoutException as exc:
