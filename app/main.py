@@ -7,6 +7,7 @@ from starlette.responses import Response
 
 from app.core.config import get_settings
 from app.providers.client import ProviderClient, ProviderName
+from app.providers.circuit_breaker import CircuitOpenError
 
 
 settings = get_settings()
@@ -77,6 +78,12 @@ async def process_request(
         raise HTTPException(
             status_code=502,
             detail="Failed to communicate with provider",
+        ) from exc
+
+    except CircuitOpenError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Provider temporarily unavailable",
         ) from exc
 
     headers = {

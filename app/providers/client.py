@@ -3,6 +3,7 @@ from typing import Any, Literal
 import httpx
 
 from app.core.config import Settings
+from app.providers.circuit_breaker import CircuitBreaker
 
 
 ProviderName = Literal["a", "b", "c"]
@@ -22,16 +23,41 @@ class ProviderClient:
             "c": settings.provider_c_url,
         }
 
+        self._breakers = {
+            provider: CircuitBreaker(
+                failure_threshold=(
+                    settings.circuit_breaker_failure_threshold
+                ),
+                recovery_seconds=(
+                    settings.circuit_breaker_recovery_seconds
+                ),
+            )
+            for provider in self._provider_urls
+        }
+
     async def process(
         self,
         provider: ProviderName,
         payload: dict[str, Any],
     ) -> httpx.Response:
-        url = self._provider_urls[provider]
+        breaker = self._breakers[provider]
 
-        response = await self._client.post(
-            url,
-            json=payload,
-        )
+        await breaker.before_request()
+
+        try:
+            response = await self._client.post(
+                self._provider_urls[provider],
+                json=payload,
+            )
+        except httpx.RequestError:
+            await breaker.record_failure()
+            raise
+
+        if response.status_code >= 500:
+            await breaker.record_failure()
+        else:
+            # Includes 2xx and 4xx responses such as 429.
+            # HTTP 4xx responses are not provider availability failures.
+            await breaker.record_success()
 
         return response
