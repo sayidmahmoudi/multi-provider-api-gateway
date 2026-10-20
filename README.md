@@ -86,6 +86,7 @@ rate (open-loop):
 ```bash
 python scripts/benchmark.py --provider a --duration 60 --concurrency 10
 python scripts/benchmark.py --provider b --duration 60 --concurrency 20
+python scripts/benchmark.py --provider c --duration 60 --concurrency 20
 python scripts/benchmark.py --provider a --duration 10 --rps 1000
 python scripts/benchmark.py --provider a --duration 5 --rps 10000 --max-in-flight 2000
 ```
@@ -96,23 +97,25 @@ drops (when `--max-in-flight` is reached). Closed-loop concurrency is the number
 of client workers. Fixed-rate runs are best for checking admission behavior;
 they do not represent provider capacity when requests are shed by the gateway.
 Run the benchmark from a machine with network access to the mock providers.
-On 2026-10-19, one API container with defaults and the live mock providers
-produced these short runs:
+With one API container, default limits, and the live mock providers, these
+short runs were recorded. Provider A was measured on 2026-10-19; B and C were
+measured on 2026-10-20:
 
 | Provider / offered load | Completed | Client drops | Successful | Throughput | Successful RPS | Avg | P95 | P99 | Error rate |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | A, 1,000 RPS for 3s | 2,019 | 981 | 21 | 479.19 RPS | 4.98 RPS | 665.83 ms | 1,011.90 ms | 1,322.45 ms | 98.96% |
 | A, 10,000 RPS for 2s | 1,410 | 18,590 | 15 | 436.22 RPS | 4.64 RPS | 740.19 ms | 1,231.64 ms | 1,245.92 ms | 98.94% |
-| B, one request | 1 | 0 | 1 | 0.15 RPS | 0.15 RPS | 6,805.51 ms | 6,805.51 ms | 6,805.51 ms | 0.00% |
-| C, one request | 1 | 0 | 1 | 0.64 RPS | 0.64 RPS | 1,566.43 ms | 1,566.43 ms | 1,566.43 ms | 0.00% |
+| B, 5 workers for 12s | 13 | 0 | 12 | 0.60 RPS | 0.55 RPS | 6,225.88 ms | 10,407.25 ms | 10,407.25 ms | 7.69% |
+| C, 5 workers for 12s | 24 | 0 | 22 | 1.63 RPS | 1.49 RPS | 2,825.97 ms | 4,279.89 ms | 4,304.01 ms | 8.33% |
 
 Provider A stayed near its configured 5 RPS successful limit under overload. The
 large 503 count reflects backpressure and provider circuit/capacity rejection;
 the fixed-rate client also dropped work after reaching its 500 in-flight cap.
-Provider B and C each returned a successful response in the single-request
-checks. These short runs validate integration and overload behavior; they do
-not demonstrate 1,000–10,000 successful RPS. The live mock providers, one API
-container, and deliberately conservative A limit dominate these measurements.
+Provider B and C were benchmarked with five closed-loop workers; each returned
+intermittent 503 responses among successful calls. These short runs validate
+integration and overload behavior; they do not demonstrate 1,000–10,000
+successful RPS. The live mock providers, one API container, and deliberately
+conservative A limit dominate these measurements.
 
 Earlier pre-Redis closed-loop runs (one API container, five workers) produced:
 
