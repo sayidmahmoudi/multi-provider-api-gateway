@@ -89,6 +89,14 @@ python scripts/benchmark.py --provider b --duration 60 --concurrency 20
 python scripts/benchmark.py --provider c --duration 60 --concurrency 20
 python scripts/benchmark.py --provider a --duration 10 --rps 1000
 python scripts/benchmark.py --provider a --duration 5 --rps 10000 --max-in-flight 2000
+
+# Run the load generator separately from the API container for high rates:
+docker compose run --rm --no-deps api python scripts/benchmark.py \
+  --base-url http://api:8000 --provider b --duration 2 --rps 1000 \
+  --max-in-flight 3000
+docker compose run --rm --no-deps api python scripts/benchmark.py \
+  --base-url http://api:8000 --provider b --duration 1 --rps 10000 \
+  --max-in-flight 10000
 ```
 
 The script reports offered rate, actual request throughput, successful
@@ -116,6 +124,31 @@ intermittent 503 responses among successful calls. These short runs validate
 integration and overload behavior; they do not demonstrate 1,000–10,000
 successful RPS. The live mock providers, one API container, and deliberately
 conservative A limit dominate these measurements.
+
+## Fixed-rate B/C overload runs
+
+The B/C fixed-rate runs below used a separate load-generator container. The
+1,000 RPS runs lasted two seconds with a 3,000 in-flight cap; the 10,000 RPS
+runs lasted one second with a 10,000 in-flight cap. `Scheduled` is the number
+of benchmark tasks that completed, including attempts that ended without an
+HTTP response. `No HTTP status` counts attempts where the client received no
+response from the gateway. All runs were made on 2026-10-20:
+
+| Provider / offered rate | Scheduled | Client drops | HTTP 200 | HTTP 503 | HTTP 504 | No HTTP status | Throughput | Successful RPS | Avg | P95 | P99 | Error rate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| B, 1,000 RPS | 2,000 | 0 | 32 | 1,069 | 0 | 899 | 124.65 RPS | 1.99 RPS | 3,684.78 ms | 5,773.17 ms | 6,842.01 ms | 98.40% |
+| C, 1,000 RPS | 2,000 | 0 | 39 | 1,033 | 0 | 928 | 186.48 RPS | 3.64 RPS | 4,202.10 ms | 7,218.43 ms | 8,054.01 ms | 98.05% |
+| B, 10,000 RPS | 10,000 | 0 | 0 | 0 | 0 | 10,000 | 141.82 RPS | 0.00 RPS | 46,109.31 ms | 65,402.74 ms | 65,687.15 ms | 100.00% |
+| C, 10,000 RPS | 10,000 | 0 | 0 | 0 | 0 | 10,000 | 143.93 RPS | 0.00 RPS | 44,593.42 ms | 63,945.31 ms | 64,308.23 ms | 100.00% |
+
+The 1,000 RPS runs scheduled the full offered load, but only about 2–4
+successful responses per second were observed; many attempts received 503 or
+no HTTP response. At 10,000 RPS the local stack and/or load generator saturated:
+all tasks ended without an HTTP response and draining took about 70 seconds.
+Those 10,000 RPS rows are overload observations, not evidence that the gateway
+accepted 10,000 requests per second or that the upstream providers sustained
+that rate. A distributed load generator and a scaled multi-replica environment
+are needed to measure that capacity meaningfully.
 
 Earlier pre-Redis closed-loop runs (one API container, five workers) produced:
 
