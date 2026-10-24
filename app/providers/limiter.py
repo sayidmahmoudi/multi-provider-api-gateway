@@ -142,7 +142,7 @@ class ProviderCapacityLimiter:
                     self._leases_key,
                     token,
                 )
-            except Exception as exc:
+            except Exception:
                 logger.exception("shared_limiter_release_failed")
                 return
             if not released:
