@@ -114,3 +114,7 @@ include sensitive fields in a real integration. Apply data minimization,
 redaction, access controls, and retention limits before production use. Mock
 provider latency/rate limits and the single-host Compose setup are likely to be
 the main benchmark bottlenecks before the database batch writer is saturated.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
