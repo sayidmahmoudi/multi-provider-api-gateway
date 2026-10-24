@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="410" viewBox="0 0 960 410" role="img" aria-labelledby="title description">
+  <title id="title">Illustrative gateway request</title>
+  <desc id="description">A terminal example showing a request to the local gateway and a mock provider response with request and trace IDs.</desc>
+  <rect width="960" height="410" rx="18" fill="#101820"/>
+  <path d="M18 0h924a18 18 0 0 1 18 18v38H0V18A18 18 0 0 1 18 0Z" fill="#243746"/>
+  <circle cx="28" cy="28" r="7" fill="#ff6b6b"/><circle cx="52" cy="28" r="7" fill="#ffd166"/><circle cx="76" cy="28" r="7" fill="#06d6a0"/>
+  <text x="480" y="34" text-anchor="middle" fill="#d7e2ea" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14">local gateway demo · illustrative output</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16">
+    <text x="34" y="98" fill="#7bdff2">$</text>
+    <text x="56" y="98" fill="#f4f7f9">curl -i -X POST 'localhost:8000/api/v1/process?provider=a' \</text>
+    <text x="56" y="126" fill="#f4f7f9">  -H 'Idempotency-Key: order-123' -d '{"amount":1000,"currency":"IRR"}'</text>
+    <text x="34" y="181" fill="#7bdff2">&lt;</text>
+    <text x="56" y="181" fill="#f4f7f9">HTTP/1.1 200 OK</text>
+    <text x="56" y="209" fill="#b8c7d1">X-Gateway-Provider: a</text>
+    <text x="56" y="237" fill="#b8c7d1">X-Request-ID: 8ad2... (generated per request)</text>
+    <text x="56" y="265" fill="#b8c7d1">X-Trace-ID: 91bc... (generated per request)</text>
+    <text x="34" y="320" fill="#7bdff2">&gt;</text>
+    <text x="56" y="320" fill="#b8c7d1">{"provider":"mock-a","status":"processed","request_id":"..."}</text>
+    <text x="34" y="365" fill="#8fa3b3" font-size="13">Example shape only; response body and status depend on mock provider behavior.</text>
+  </g>
+</svg>
