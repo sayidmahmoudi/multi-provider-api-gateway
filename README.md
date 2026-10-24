@@ -1,5 +1,7 @@
 # Multi-Provider API Gateway
 
+[![CI](https://github.com/sayidmahmoudi/multi-provider-api-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/sayidmahmoudi/multi-provider-api-gateway/actions/workflows/ci.yml)
+
 An asynchronous FastAPI gateway that routes requests to three mock provider
 services, limits upstream load, and records request/result metadata in
 PostgreSQL. The configured upstreams are mock services; this project does not
